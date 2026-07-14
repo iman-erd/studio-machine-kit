@@ -17,12 +17,12 @@ Een kant-en-klaar Claude Code-team: **34 specialist-agents** met slimme model-ti
 
 **In Claude Code — plak dit 1:1:**
 
-> Clone `<REPO_URL>` naar een tijdelijke map en voer `install.sh` uit om de studio-agents en skills in mijn `~/.claude` te zetten. Bevestig daarna dat de skills `/turbo` en `/ui-check` beschikbaar zijn en dat de ui-ux-pro-max zoekengine draait met `python3 ~/.claude/skills/ui-ux-pro-max/scripts/search.py "accessibility" --domain ux -n 1`. Vat kort samen wat er geïnstalleerd is.
+> Clone `https://github.com/iman-erd/studio-machine-kit` naar een tijdelijke map en voer `install.sh` uit om de studio-agents en skills in mijn `~/.claude` te zetten. Bevestig daarna dat de skills `/turbo` en `/ui-check` beschikbaar zijn en dat de ui-ux-pro-max zoekengine draait met `python3 ~/.claude/skills/ui-ux-pro-max/scripts/search.py "accessibility" --domain ux -n 1`. Vat kort samen wat er geïnstalleerd is.
 
 **Of handmatig in een terminal:**
 
 ```bash
-git clone <REPO_URL> studio-machine-kit
+git clone https://github.com/iman-erd/studio-machine-kit studio-machine-kit
 cd studio-machine-kit
 bash install.sh
 ```
