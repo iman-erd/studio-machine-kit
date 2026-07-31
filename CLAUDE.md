@@ -1,32 +1,37 @@
 # studio-machine-kit
 
----
+## Wat dit is
+Het gereedschap van de studio: agent-definities en skills die in álle Terra
+Nova-projecten gebruikt worden. Ontwerp, UI-review, banners, slides, merk.
+Geen productcode; dit is wat de andere repo's gebruiken om te bouwen.
 
-## Token Efficiency Mode (alle projecten)
+## Stack
+Markdown-skills met Python-hulpscripts en CSV-kennisbanken. Geen build, geen server.
 
-Doel: taken uitvoeren met zo min mogelijk tokens, API-calls en context, zonder onnodig kwaliteitsverlies.
+## Lees dit eerst
+- KAART.md — waar staat wat
+- HANDOFF.md — stand van zaken
+- `README.md` — wat de kit is en hoe je hem installeert
+- `docs/ORKESTRATIE.md` — hoe agents samenwerken
+- `../../operator/archief/INDEX.md` — welke documenten bestaan
 
-**Algemeen**
-- Behandel tokens als een schaars budget; kies de goedkoopste aanpak die volstaat.
-- Lees nooit meer bestanden dan nodig. Analyseer eerst, voer dan pas uit.
-- Geen lange uitleg tenzij expliciet gevraagd. Antwoorden zijn kort en functioneel.
+## Harde regels
+- **Skills worden op pad ingeladen.** Hernoem of verplaats geen skill-map zonder te
+  controleren wat ernaar verwijst: er is geen test die dit vangt, het faalt stil.
+- Elke skill heeft één `SKILL.md` als ingang. Wat daar niet in staat, wordt niet gelezen.
+- De kennisbanken (CSV met kleuren, fonts, stijlen) zijn data, geen broncode. Lees ze
+  met grep, niet in hun geheel.
+- Deze repo staat op een persoonlijk GitHub-account, niet in de organisatie. Wie er
+  eigenaar van is, is een openstaande vraag; ga er niet van uit dat het geregeld is.
+- Wat hier verandert, verandert in elk project tegelijk. Wijzig dus bewust.
 
-**Planning**: bepaal wat nodig is → minimale strategie → alleen noodzakelijke stappen → stop zodra doel bereikt.
+## Werkregels
+- Bouwtaak? Eerst POORT.md, dan wachten op antwoord.
+- Grep niet voordat je KAART.md hebt gelezen. Verzin geen namen; zoek ze op.
+- Werk zuinig: goedkoopste model dat volstaat, regelbereiken in plaats van hele
+  bestanden, en stop zodra het doel bereikt is.
+- Einde sessie: HANDOFF.md overschrijven, `bin/check`, pushen.
 
-**Context**: open nooit een hele repo als enkele bestanden volstaan. Lees grote bestanden deels. Vermijd herhaald lezen; hergebruik verzamelde info.
-
-**Orchestrator**: splits deelbare taken in onafhankelijke subtaken, houd centrale context klein, geef subtaken alleen wat ze nodig hebben, voeg enkel eindresultaten samen.
-
-**Modelselectie**: goedkoop model voor zoeken/verkennen/grep/classificeren/samenvatten/eenvoudige refactors/docs lezen/foutlocatie. Krachtiger model alleen voor complexe architectuur, moeilijke debugging, ontwerpbeslissingen, grote refactors, lastige algoritmes. Escaleer alleen indien nodig.
-
-**Zoeken**: geef voorkeur aan grep/ripgrep/symbol-/file-/directory-search boven volledige bestanden openen.
-
-**Bewerken**: wijzig alleen relevante regels, herschrijf geen hele bestanden, vermijd cosmetische wijzigingen, combineer gerelateerde wijzigingen in één bewerking.
-
-**Toolgebruik**: zo min mogelijk calls. Volgorde: zoeken → relevante regels lezen → aanpassen → verifiëren. Niet: hele repo lezen, tientallen bestanden openen, onnodige analyses.
-
-**Antwoordformaat**: (1) Wat is gedaan (2) Welke bestanden aangepast (3) Eventuele vervolgstap. Geen uitgebreide uitleg.
-
-**Onduidelijke opdracht**: stel max. één verduidelijkende vraag als dat veel werk voorkomt.
-
-**Stopconditie**: zodra de opdracht correct is uitgevoerd, stop. Geen extra "nice to have"-optimalisaties tenzij gevraagd.
+## Wat je nooit doet
+- Een skill-map hernoemen of verplaatsen.
+- Bestanden verwijderen zonder opdracht. Werken op main. Meer doen dan gevraagd.

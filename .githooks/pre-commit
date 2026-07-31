@@ -1,0 +1,27 @@
+#!/bin/sh
+# Blokkeert op fouten uit bin/check, en op secrets. Waarschuwingen laten door.
+set -e
+root=$(git rev-parse --show-toplevel)
+
+# ── Secrets: bestandsnamen
+if git diff --cached --name-only | grep -qiE '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$|id_rsa|credentials)'; then
+  echo "GEBLOKKEERD: er staat een secret-bestand in de commit."
+  git diff --cached --name-only | grep -iE '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$|id_rsa|credentials)' | sed 's/^/  /'
+  exit 1
+fi
+
+# ── Secrets: inhoud
+patronen='AKIA[0-9A-Z]{16}|sk_live_[0-9a-zA-Z]{10,}|sk-ant-[0-9a-zA-Z_-]{20,}|xoxb-[0-9A-Za-z-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+if git diff --cached -U0 | grep -qE "$patronen"; then
+  echo "GEBLOKKEERD: wat op een sleutel lijkt staat in de commit."
+  echo "Klopt het toch niet, dan: git commit --no-verify (en leg uit waarom in de message)."
+  exit 1
+fi
+
+# ── Brondocumenten met persoonsgegevens
+if git diff --cached --name-only | grep -qE '^archief/.*/bron\.'; then
+  echo "GEBLOKKEERD: een bron-document uit /archief hoort niet in git. Zie M14."
+  exit 1
+fi
+
+[ -x "$root/bin/check" ] && "$root/bin/check"

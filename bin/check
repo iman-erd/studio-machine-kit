@@ -1,0 +1,136 @@
+#!/bin/sh
+# bin/check — guards. Alleen regels die een script kan controleren.
+# Werkt zowel in de operator-repo als in een projectrepo. Geen dependencies.
+# Exit 0 = goed of alleen waarschuwingen. Exit 1 = fout, pre-commit blokkeert.
+
+ERR=0
+WARN=0
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || root=$(pwd)
+cd "$root" || exit 1
+
+fout()  { printf 'FOUT   %s\n' "$1"; ERR=$((ERR+1)); }
+waarsch(){ printf 'let op %s\n' "$1"; WARN=$((WARN+1)); }
+goed()  { printf 'ok     %s\n' "$1"; }
+
+regels() { [ -f "$1" ] && wc -l < "$1" | tr -d ' ' || echo 0; }
+dagen_oud() {
+  [ -e "$1" ] || { echo 99999; return; }
+  m=$(date -r "$1" +%s 2>/dev/null || stat -c %Y "$1" 2>/dev/null) || { echo 0; return; }
+  echo $(( ( $(date +%s) - m ) / 86400 ))
+}
+
+echo "── check in $root"
+
+# ── CLAUDE.md: het duurste bestand dat je hebt, want het gaat elke sessie mee.
+if [ -f CLAUDE.md ]; then
+  n=$(regels CLAUDE.md)
+  if [ "$n" -gt 40 ]; then
+    fout "CLAUDE.md is $n regels, maximum is 40. Kort in of zet het in _teSorteren/."
+  else
+    goed "CLAUDE.md $n/40 regels"
+  fi
+fi
+
+# ── HANDOFF.md: kort, en actueel als er onafgerond werk ligt.
+if [ -f HANDOFF.md ]; then
+  n=$(regels HANDOFF.md)
+  [ "$n" -gt 20 ] && fout "HANDOFF.md is $n regels, maximum is 20. Overschrijven, niet aanvullen."
+  d=$(dagen_oud HANDOFF.md)
+  if [ -n "$(git status --porcelain 2>/dev/null)" ] && [ "$d" -gt 7 ]; then
+    fout "HANDOFF.md is $d dagen oud terwijl er niet-gecommit werk ligt."
+  fi
+  [ "$n" -le 20 ] && goed "HANDOFF.md $n/20 regels, $d dagen oud"
+elif [ -f CLAUDE.md ]; then
+  waarsch "geen HANDOFF.md. Kopieer templates/HANDOFF.md."
+fi
+
+# ── Git is de waarheid. Achterstand op de remote is de oorzaak van je verouderde
+#    lokale bestanden, niet de structuur.
+if git rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1; then
+  git fetch --quiet 2>/dev/null || true
+  achter=$(git rev-list --count HEAD..'@{u}' 2>/dev/null || echo 0)
+  voor=$(git rev-list --count '@{u}'..HEAD 2>/dev/null || echo 0)
+  [ "$achter" -gt 0 ] && fout "$achter commits achter op de remote. Pull eerst."
+  [ "$voor" -gt 5 ] && waarsch "$voor commits nog niet gepusht."
+  [ "$achter" -eq 0 ] && goed "gelijk met de remote"
+else
+  waarsch "geen upstream branch ingesteld."
+fi
+
+# ── Standaarden horen in operator, niet lokaal aangepast.
+if [ -d standaarden ] && [ ! -f VERSIE ]; then
+  # Alleen wijzigingen en verwijderingen van bestaande bestanden tellen. Bij de eerste
+  # sync zijn ze untracked (??) of toegevoegd (A); dat is de sync zelf, geen wijziging.
+  if [ -n "$(git status --porcelain standaarden 2>/dev/null | grep -vE '^(\?\?|A)')" ]; then
+    fout "lokale wijzigingen in standaarden/. Wijzig ze in de operator-repo en sync."
+  fi
+  if [ -f standaarden/VERSIE ]; then
+    goed "standaarden versie $(cat standaarden/VERSIE)"
+  else
+    waarsch "standaarden/ zonder VERSIE. Draai bin/sync-standaarden."
+  fi
+fi
+
+# ── Standaarden die te lang niet zijn herzien zijn erger dan geen standaard,
+#    want ze worden wel gevolgd.
+for f in standaarden/STANDAARD-*.md; do
+  [ -f "$f" ] || continue
+  h=$(grep -m1 '^Herzien:' "$f" 2>/dev/null | sed 's/^Herzien:[[:space:]]*//')
+  case "$h" in
+    ""|LEEG|TE*) waarsch "$f is nog niet ingevuld (fase 4)." ;;
+    *)
+      # GNU (Linux) en BSD (macOS) parsen datums anders; probeer beide.
+      hs=$(date -d "$h" +%s 2>/dev/null || date -j -f '%Y-%m-%d' "$h" +%s 2>/dev/null || echo "")
+      if [ -n "$hs" ]; then
+        d=$(( ( $(date +%s) - hs ) / 86400 ))
+        [ "$d" -gt 92 ] && waarsch "$f is $d dagen niet herzien."
+      fi
+      ;;
+  esac
+done
+
+# ── Documenten buiten het archief worden bij elke sessie opnieuw ingelezen.
+losse=$(find . -name node_modules -prune -o -name .git -prune -o -path ./archief -prune \
+  -o \( -iname '*.pdf' -o -iname '*.docx' \) -print 2>/dev/null | head -20)
+if [ -n "$losse" ]; then
+  waarsch "documenten buiten /archief:"
+  echo "$losse" | sed 's/^/         /'
+fi
+
+# ── Een archiefmap zonder gevulde kern.md is een document dat je alsnog helemaal
+#    moet lezen. Dat is precies wat het archief moest voorkomen.
+if [ -d archief ]; then
+  for d in archief/*/*/*/; do
+    [ -d "$d" ] || continue
+    if [ ! -f "$d/kern.md" ]; then
+      waarsch "${d}kern.md ontbreekt"
+    elif grep -q 'TE VULLEN' "$d/kern.md" 2>/dev/null; then
+      waarsch "${d}kern.md is nog een stub"
+    fi
+  done
+fi
+
+# ── Brondocumenten met persoonsgegevens mogen niet in git terechtkomen. Na één
+#    commit staat het er permanent, ook na verwijderen.
+if git ls-files 2>/dev/null | grep -qE '^archief/.*/bron\.'; then
+  fout "er staat een bron-document in git. Zie M14: haal het uit de index en de historie."
+fi
+
+# ── Wat je niet kon plaatsen moet je wel een keer plaatsen.
+if [ -d _teSorteren ] && [ -n "$(ls -A _teSorteren 2>/dev/null)" ]; then
+  d=$(dagen_oud _teSorteren)
+  [ "$d" -gt 30 ] && waarsch "_teSorteren/ ligt er $d dagen. Leeghalen."
+fi
+
+# ── Zonder bewijscommando blijft "klaar" een mening (M6).
+if [ -f bin/verify ]; then
+  grep -q 'NIET INGERICHT' bin/verify 2>/dev/null && \
+    waarsch "bin/verify is nog niet ingericht. Tot die tijd is 'klaar' een mening."
+else
+  [ -f CLAUDE.md ] && waarsch "geen bin/verify. Zie M6 — hoogste opbrengst van de hele lijst."
+fi
+
+echo "── $ERR fout, $WARN waarschuwing"
+[ "$ERR" -gt 0 ] && exit 1
+exit 0

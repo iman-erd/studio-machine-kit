@@ -1,0 +1,17 @@
+#!/bin/sh
+# bin/verify — het enige commando dat "klaar" bewijst. Zie M6.
+#
+# NIET INGERICHT. Vervang de regels hieronder door wat in dit project klaar bewijst:
+# build, tests, typecheck, lint, en bin/check. Faalt er iets, dan is het niet klaar —
+# ongeacht hoe het eruitziet in de browser.
+#
+# Voorbeeld:
+#   set -e
+#   npm run typecheck
+#   npm test
+#   npm run build
+#   ./bin/check
+set -e
+echo "bin/verify is NIET INGERICHT."
+echo "Zolang dit zo staat is 'klaar' een mening. Richt het in."
+exit 1
